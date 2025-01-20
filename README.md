@@ -9,6 +9,8 @@
 
 https://github.com/user-attachments/assets/9c5432a2-ac28-4afd-809a-130877f9fb7a
 
+<img width="640" alt="RootNotSelected" src="https://github.com/user-attachments/assets/99d795a6-d8b1-4ced-a603-886ee25a9b64" />
+
 ---
 
 ### Information
