@@ -12,11 +12,11 @@ from bpy.types import Operator
 
 def log(msg):
     # Print log message with prefix
-    print(f"[Update Local] {msg}")
+    print(f"[Install] {msg}")
 
 class BONE_OT_update_from_local(Operator, ImportHelper):
     bl_idname = "bone.update_from_local"
-    bl_label = "Update from Local"
+    bl_label = "Install"
     bl_description = "Select a local zip file to update the addon"
     
     filename_ext = ".zip"

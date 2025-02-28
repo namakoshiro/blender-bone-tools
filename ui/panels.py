@@ -47,7 +47,7 @@ class VIEW3D_PT_bone_tools(Panel):
             row = box.row()
             row.scale_y = 1
             row.enabled = obj and obj.type == 'ARMATURE' and context.mode == 'EDIT_ARMATURE'
-            row.operator("bone.rename_hair_chain", text="Rename")
+            row.operator("bone.rename_hair_chain", text="Rename", icon='SHADERFX')
         
         # Name Matcher
         box = layout.box()
@@ -75,11 +75,18 @@ class VIEW3D_PT_bone_tools(Panel):
             row.enabled = obj and obj.type == 'ARMATURE' and context.mode == 'EDIT_ARMATURE'
             row.prop(props, "target_preset", text="")
             
-            # Click the button
-            row = box.row()
-            row.scale_y = 1
-            row.enabled = obj and obj.type == 'ARMATURE' and context.mode == 'EDIT_ARMATURE'
-            row.operator("armature.convert_names", text="Convert")
+            # Click the button and Edit Presets
+            row = box.row(align=True)
+            split = row.split(factor=0.85, align=True)
+            col = split.column(align=True)
+            col.scale_y = 1
+            col.enabled = obj and obj.type == 'ARMATURE' and context.mode == 'EDIT_ARMATURE'
+            col.operator("armature.convert_names", text="Convert", icon='OUTLINER_OB_ARMATURE')
+            
+            # Edit Presets button (icon only)
+            col = split.column(align=True)
+            col.scale_y = 1
+            col.operator("armature.open_presets_file", text="", icon='TEXT')
         
         # Weight Transfer
         box = layout.box()
@@ -101,13 +108,13 @@ class VIEW3D_PT_bone_tools(Panel):
             col = split.column(align=True)
             col.scale_y = 1
             col.enabled = obj and obj.type == 'MESH' and context.mode in {'OBJECT', 'PAINT_WEIGHT'}
-            col.operator("weight.export_weights", text="Export")
+            col.operator("weight.export_weights", text="Export", icon='EXPORT')
             
             # Import button
             col = split.column(align=True)
             col.scale_y = 1
             col.enabled = obj and obj.type == 'MESH' and context.mode in {'OBJECT', 'PAINT_WEIGHT'}
-            col.operator("weight.import_weights", text="Import")
+            col.operator("weight.import_weights", text="Import", icon='IMPORT')
             
             # Import to selected vertices only
             row = box.row()
@@ -115,22 +122,29 @@ class VIEW3D_PT_bone_tools(Panel):
             row.prop(props, "selected_only")
         
         layout.separator()
-        
-        # Update from online
         box = layout.box()
-        row = box.row()
-        row.scale_y = 1
-        row.operator("bone.update_from_online", text="Update from Online", icon='URL')
+        row = box.row(align=True)
+        split = row.split(factor=0.5, align=True)
         
-        # Update from local
-        row = box.row()
-        row.scale_y = 1
-        row.operator("bone.update_from_local", text="Update from Local", icon='PACKAGE')
+        # Update button
+        col = split.column(align=True)
+        col.scale_y = 1
+        col.operator("bone.update_from_online", text="Update", icon='URL')
+        
+        # Install button
+        col = split.column(align=True)
+        col.scale_y = 1
+        col.operator("bone.update_from_local", text="Install", icon='PACKAGE')
 
         # Version Info
         col = box.column()
         col.label(text="Version: 1.2.0")
         col.label(text="Last Updated: 2025/2/28")
+        
+        # Show update notification if available
+        if hasattr(bpy.types.Scene, "bone_tools_update_available") and bpy.types.Scene.bone_tools_update_available:
+            row = col.row()
+            row.label(text="New Version Available!")
 
 # Register
 def register():

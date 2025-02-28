@@ -7,6 +7,7 @@ import tempfile
 import shutil
 import sys
 import time
+import datetime
 from bpy.props import StringProperty, BoolProperty
 from bpy.types import Operator
 import urllib.request
@@ -14,7 +15,7 @@ import urllib.error
 
 def log(msg):
     # Print log message with prefix
-    print(f"[Update Online] {msg}")
+    print(f"[Update] {msg}")
 
 _latest_tag_name = ""
 
@@ -22,7 +23,7 @@ GITHUB_API_URL = "https://api.github.com/repos/namakoshiro/blender-bone-tools/re
 
 class BONE_OT_update_from_online(Operator):
     bl_idname = "bone.update_from_online"
-    bl_label = "Update from Online"
+    bl_label = "Update"
     bl_description = "Check and download updates from GitHub"
     
     def get_current_version(self):
@@ -260,70 +261,122 @@ class BONE_OT_confirm_update(Operator):
                                 new_files_and_dirs.add(file)
                             else:
                                 new_files_and_dirs.add(os.path.join(rel_path, file))
-                except Exception as e:
-                    log(f"Error during file scanning: {str(e)}")
-                    self.report({'ERROR'}, f"File scanning error: {str(e)}")
-                    return False
-                
-                try:
-                    log("Copy new files to addon directory")
-                    # Update files by copying
-                    for item in os.listdir(source_dir):
+                    
+                    log("Preparing for update")
+                    # Create necessary directories
+                    for dir_path in new_files_and_dirs:
+                        full_path = os.path.join(addon_dir, dir_path)
+                        if dir_path.endswith(os.sep) and not os.path.exists(full_path):
+                            os.makedirs(full_path, exist_ok=True)
+                    
+                    log("Copying files")
+                    # Copy new files
+                    for item in new_files_and_dirs:
                         s = os.path.join(source_dir, item)
                         d = os.path.join(addon_dir, item)
                         if os.path.isdir(s):
                             if os.path.exists(d):
-                                shutil.rmtree(d)
-                            shutil.copytree(s, d)
-                        else:
+                                continue
+                            os.makedirs(d, exist_ok=True)
+                        elif os.path.isfile(s):
+                            os.makedirs(os.path.dirname(d), exist_ok=True)
                             shutil.copy2(s, d)
                     
+                    log("Removing old files")
                     # Remove old files not in new version
                     files_to_remove = old_files_and_dirs - new_files_and_dirs
-                    for item in sorted(files_to_remove, key=lambda x: len(x), reverse=True):
+                    for item in sorted(files_to_remove, key=lambda x: len(x.split(os.sep)), reverse=True):
                         item_path = os.path.join(addon_dir, item)
                         if os.path.exists(item_path):
                             if os.path.isdir(item_path):
-                                shutil.rmtree(item_path)
+                                try:
+                                    shutil.rmtree(item_path)
+                                except Exception as e:
+                                    log(f"Warning: Could not remove directory {item_path}: {str(e)}")
                             else:
-                                os.remove(item_path)
+                                try:
+                                    os.remove(item_path)
+                                except Exception as e:
+                                    log(f"Warning: Could not remove file {item_path}: {str(e)}")
                     
+                    # Update successful
                     return True
                 except Exception as e:
-                    log(f"File system error: {str(e)}")
-                    self.report({'ERROR'}, f"File system error: {str(e)}")
+                    log(f"Error during update: {str(e)}")
+                    self.report({'ERROR'}, f"Update error: {str(e)}")
                     return False
-                
         except Exception as e:
-            log(f"Unexpected error during installation: {str(e)}")
-            self.report({'ERROR'}, f"Installation error: {str(e)}")
+            log(f"Critical error during update: {str(e)}")
+            self.report({'ERROR'}, f"Critical update error: {str(e)}")
             return False
     
     def refresh_ui(self):
         # Reload addon and refresh UI
-        log("Refreshing UI")
+        log("Starting UI refresh")
         addon_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
         addon_name = os.path.basename(addon_dir)
-        modules_to_remove = []
-        for mod_name in list(sys.modules.keys()):
-            if addon_name in mod_name:
-                modules_to_remove.append(mod_name)
-        for mod_name in modules_to_remove:
-            if mod_name in sys.modules:
-                del sys.modules[mod_name]
-        bpy.ops.script.reload()
-        addon_module = None
-        for mod_name in bpy.context.preferences.addons.keys():
-            if addon_name in mod_name:
-                addon_module = mod_name
-                break
-        if addon_module:
-            bpy.ops.preferences.addon_disable(module=addon_module)
-            bpy.ops.preferences.addon_enable(module=addon_module)
-        for window in bpy.context.window_manager.windows:
-            for area in window.screen.areas:
-                area.tag_redraw()
-        return True
+        log(f"Addon name: {addon_name}")
+        
+        # Store modules with register function
+        main_modules = {}
+        for mod_name in sys.modules.keys():
+            if addon_name in mod_name and hasattr(sys.modules[mod_name], 'register'):
+                main_modules[mod_name] = sys.modules[mod_name]
+        
+        try:
+            # Find addon module
+            addon_module = None
+            if hasattr(bpy.context, 'preferences') and hasattr(bpy.context.preferences, 'addons'):
+                for mod_name in bpy.context.preferences.addons.keys():
+                    if addon_name in mod_name:
+                        addon_module = mod_name
+                        break
+            log(f"Found addon module: {addon_module}")
+            
+            # Call unregister on main modules
+            log("Unregistering modules")
+            for mod_name, module in main_modules.items():
+                if hasattr(module, 'unregister'):
+                    try:
+                        module.unregister()
+                    except Exception as e:
+                        log(f"Warning: Error unregistering {mod_name}: {str(e)}")
+            
+            # Remove modules from sys.modules
+            log("Removing modules from sys.modules")
+            modules_to_remove = []
+            for mod_name in list(sys.modules.keys()):
+                if addon_name in mod_name:
+                    modules_to_remove.append(mod_name)
+            for mod_name in modules_to_remove:
+                if mod_name in sys.modules:
+                    del sys.modules[mod_name]
+            
+            # Reload addon and UI
+            log("Reloading scripts")
+            bpy.ops.script.reload()
+            
+            # Re-enable addon
+            if addon_module:
+                log(f"Re-enabling addon {addon_module}")
+                try:
+                    bpy.ops.preferences.addon_disable(module=addon_module)
+                    bpy.app.timers.register(lambda: enable_addon(addon_module), first_interval=0.5)
+                except Exception as e:
+                    log(f"Warning: Error re-enabling addon: {str(e)}")
+            
+            # Force UI redraw
+            log("Force UI redraw")
+            def force_redraw():
+                for window in bpy.context.window_manager.windows:
+                    for area in window.screen.areas:
+                        area.tag_redraw()
+                return None
+            
+            bpy.app.timers.register(force_redraw, first_interval=1.0)
+            bpy.app.timers.register(force_redraw, first_interval=2.0)
+        except Exception as e:
+            log(f"Error during UI refresh: {str(e)}")
 
 class BONE_OT_cancel_update(Operator):
     bl_idname = "bone.cancel_update"
@@ -332,19 +385,131 @@ class BONE_OT_cancel_update(Operator):
     
     def execute(self, context):
         # Cancel update
+        log("Update cancelled by user")
         self.report({'INFO'}, "Update cancelled")
         return {'FINISHED'}
+
+def check_for_updates():
+    log("Background update check started")
+    
+    try:
+        addon_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        init_file = os.path.join(addon_dir, "__init__.py")
+        current_version = None
+        with open(init_file, 'r') as f:
+            content = f.read()
+        version_match = re.search(r'"version":\s*\((\d+),\s*(\d+),\s*(\d+)\)', content)
+        if version_match:
+            current_version = (int(version_match.group(1)), int(version_match.group(2)), int(version_match.group(3)))
+        if not current_version:
+            return None
+        api_url = GITHUB_API_URL
+        headers = {
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'Mozilla/5.0'
+        }
+        req = urllib.request.Request(api_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=5) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            tag_name = data['tag_name']
+            version_match = re.match(r'v?(\d+)\.(\d+)\.(\d+)', tag_name)
+            if version_match:
+                latest_version = (int(version_match.group(1)), int(version_match.group(2)), int(version_match.group(3)))
+            else:
+                return None
+        
+        is_newer = False
+        if latest_version[0] > current_version[0]:
+            is_newer = True
+        elif latest_version[0] == current_version[0] and latest_version[1] > current_version[1]:
+            is_newer = True
+        elif latest_version[0] == current_version[0] and latest_version[1] == current_version[1] and latest_version[2] > current_version[2]:
+            is_newer = True
+        
+        if is_newer:
+            global _latest_tag_name
+            _latest_tag_name = tag_name
+            version_str = f"{latest_version[0]}.{latest_version[1]}.{latest_version[2]}"
+            log(f"New version {version_str} available")
+            bpy.types.Scene.bone_tools_update_available = True
+            bpy.types.Scene.bone_tools_new_version = version_str
+        else:
+            bpy.types.Scene.bone_tools_update_available = False
+            log("No updates available")
+        
+        return None
+    except Exception as e:
+        log(f"Error checking for updates: {str(e)}")
+        return None
+
+def should_check_for_updates():
+    last_check = None
+    
+    if hasattr(bpy.context.scene, "bone_tools_last_update_check"):
+        try:
+            last_check_str = bpy.context.scene.bone_tools_last_update_check
+            if last_check_str:
+                last_check = datetime.datetime.strptime(last_check_str, "%Y-%m-%d").date()
+        except:
+            last_check = None
+    
+    if last_check is None:
+        return True
+    
+    today = datetime.datetime.now().date()
+    if today > last_check:
+        return True
+    
+    return False
+
+def background_update_check():
+    if should_check_for_updates():
+        today_str = datetime.datetime.now().strftime("%Y-%m-%d")
+        bpy.context.scene.bone_tools_last_update_check = today_str
+        check_for_updates()
+    
+    return None
+
+def enable_addon(addon_module):
+    try:
+        bpy.ops.preferences.addon_enable(module=addon_module)
+        for window in bpy.context.window_manager.windows:
+            for area in window.screen.areas:
+                area.tag_redraw()
+        return None
+    except Exception as e:
+        log(f"Error enabling addon: {str(e)}")
+        return None
 
 # Register
 def register():
     bpy.utils.register_class(BONE_OT_update_from_online)
+    bpy.utils.register_class(BONE_OT_show_update_dialog)
     bpy.utils.register_class(BONE_OT_confirm_update)
     bpy.utils.register_class(BONE_OT_cancel_update)
-    bpy.utils.register_class(BONE_OT_show_update_dialog)
+    bpy.types.Scene.bone_tools_update_available = False
+    bpy.types.Scene.bone_tools_new_version = ""
+
+    bpy.types.Scene.bone_tools_last_update_check = StringProperty(
+        name="Last Update Check",
+        description="Date of the last update check (YYYY-MM-DD)",
+        default=""
+    )
+    
+    bpy.app.timers.register(background_update_check, first_interval=5.0)
 
 # Unregister
 def unregister():
+    if hasattr(bpy.app.timers, "is_registered") and bpy.app.timers.is_registered(background_update_check):
+        bpy.app.timers.unregister(background_update_check)
+    if hasattr(bpy.types.Scene, "bone_tools_update_available"):
+        del bpy.types.Scene.bone_tools_update_available
+    if hasattr(bpy.types.Scene, "bone_tools_new_version"):
+        del bpy.types.Scene.bone_tools_new_version
+    if hasattr(bpy.types.Scene, "bone_tools_last_update_check"):
+        del bpy.types.Scene.bone_tools_last_update_check
+    
     bpy.utils.unregister_class(BONE_OT_cancel_update)
     bpy.utils.unregister_class(BONE_OT_confirm_update)
-    bpy.utils.unregister_class(BONE_OT_update_from_online)
     bpy.utils.unregister_class(BONE_OT_show_update_dialog)
+    bpy.utils.unregister_class(BONE_OT_update_from_online) 

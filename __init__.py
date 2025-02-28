@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Bone Tools",
     "author": "namakoshiro",
-    "version": (1, 2, 0),
+    "version": (1, 0, 0),
     "blender": (2, 80, 0),
     "location": "View3D > Sidebar > Bone",
     "description": "This is a Blender addon to manage bones and weights",
@@ -39,6 +39,9 @@ def get_preset_items(self, context):
     items = [(key, preset["name"], preset["description"]) for key, preset in presets.items()]
     return items if items else [('NONE', "No Presets", "No naming presets found")]
 
+# Make these functions available for other modules
+__all__ = ['get_preset_path', 'load_presets', 'get_preset_items']
+
 # Import from ui directory
 from .ui import panels
 
@@ -48,8 +51,8 @@ from .modules import name_matcher
 from .modules import weight_transfer
 
 # Import from utils directory
-from .utils import update_local
-from .utils import update_online
+from .utils import install
+from .utils import update
 
 class BoneToolsProperties(PropertyGroup):
     # Show or hide the sections
@@ -103,13 +106,13 @@ def register():
     name_matcher.register()
     weight_transfer.register()
     panels.register()
-    update_local.register()
-    update_online.register()
+    install.register()
+    update.register()
 
 # Unregister
 def unregister():
-    update_online.unregister()
-    update_local.unregister()
+    update.unregister()
+    install.unregister()
     panels.unregister()
     weight_transfer.unregister()
     name_matcher.unregister()

@@ -1,19 +1,19 @@
 ## [**`👉 Download Latest Version 👈`**](https://github.com/namakoshiro/blender-bone-tools/releases/download/v1.2.0/blender-bone-tools-v1.2.0.zip)
 
 - **For first time installation**
-    - Drag the Zip file into Blender and click "OK"
+    - Drag the `Zip` file into Blender and click `OK`
     - Search for `Bone Tools` in `Preferences` > `Add-ons`
     - Make sure `Bone Tools` is enabled
     - Press shortcut key `N` in viewport to open the `N-Panel`
 
-- **For update from previous version to 1.2.0**  
-    - Drag the `Zip` into Blender and click `OK`
+- **For update from previous version to 1.2.0 and later**  
+    - Drag the `Zip` file into Blender and click `OK`
     - `Restart` Blender to complete the update
 
 - **For update from version 1.2.0**  
-    - Press `Update from online` button to update the addon online
+    - Press `Update` button to update the addon online
     - In case it's not working, please manually [`Download Latest Version`](https://github.com/namakoshiro/blender-bone-tools/releases/download/v1.2.0/blender-bone-tools-v1.2.0.zip)
-    - Press `Update from local` button and select `Zip` file to update the addon
+    - Press `Install` button and select `Zip` file to update the addon
 
 ## **😊 Information**
 
