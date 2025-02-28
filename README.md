@@ -1,4 +1,4 @@
-## [**👉 Download Latest Version 👈**](https://github.com/namakoshiro/blender-bone-tools/releases/latest)
+## [**`👉 Download Latest Version 👈`**](https://github.com/namakoshiro/blender-bone-tools/releases/download/v1.2.0/blender-bone-tools-v1.2.0.zip)
 
 - **For first time installation**
     - Drag the Zip file into Blender and click "OK"
@@ -12,7 +12,7 @@
 
 - **For update from version 1.2.0**  
     - Press `Update from online` button to update the addon online
-    - If it's not working, please download the latest version from the [`Release Page`](https://github.com/namakoshiro/blender-bone-tools/releases/latest)
+    - In case it's not working, please manually [`Download Latest Version`](https://github.com/namakoshiro/blender-bone-tools/releases/download/v1.2.0/blender-bone-tools-v1.2.0.zip)
     - Press `Update from local` button and select `Zip` file to update the addon
 
 ## **😊 Information**

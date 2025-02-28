@@ -4,7 +4,7 @@ bl_info = {
     "version": (1, 2, 0),
     "blender": (2, 80, 0),
     "location": "View3D > Sidebar > Bone",
-    "description": "A blender add-on for bone and weight management",
+    "description": "This is a Blender addon to manage bones and weights",
     "warning": "",
     "wiki_url": "https://github.com/namakoshiro/blender-bone-tools",
     "doc_url": "https://github.com/namakoshiro/blender-bone-tools",
