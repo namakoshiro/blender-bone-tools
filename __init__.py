@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Bone Tools",
     "author": "namakoshiro",
-    "version": (1, 0, 0),
+    "version": (1, 2, 0),
     "blender": (2, 80, 0),
     "location": "View3D > Sidebar > Bone",
     "description": "This is a Blender addon to manage bones and weights",
