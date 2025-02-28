@@ -4,8 +4,9 @@ import json
 import numpy as np
 from bpy.types import Operator, PropertyGroup
 from bpy.props import StringProperty, BoolProperty
-from mathutils import Vector
+from mathutils import Vector, Color
 from bpy_extras.io_utils import ImportHelper, ExportHelper
+from ..utils.rainbow import draw_rainbow_weights, update_rainbow_weights_display, rainbow_weights_depsgraph_update
 
 class WEIGHT_OT_export_weights(Operator, ExportHelper):
     bl_idname = "weight.export_weights"
@@ -187,9 +188,17 @@ class WEIGHT_OT_import_weights(Operator, ImportHelper):
 def register():
     bpy.utils.register_class(WEIGHT_OT_export_weights)
     bpy.utils.register_class(WEIGHT_OT_import_weights)
+    
+    # Register depsgraph update handler from rainbow module
+    from ..utils.rainbow import register as register_rainbow
+    register_rainbow()
 
 # Unregister
 def unregister():
+    # Unregister rainbow module
+    from ..utils.rainbow import unregister as unregister_rainbow
+    unregister_rainbow()
+    
     bpy.utils.unregister_class(WEIGHT_OT_import_weights)
     bpy.utils.unregister_class(WEIGHT_OT_export_weights)
 

@@ -102,6 +102,15 @@ class VIEW3D_PT_bone_tools(Panel):
                 row.alert = True
                 row.label(text="Press Button in Object/Weight Mode", icon='ERROR')
             
+            # Rainbow Weights toggle
+            row = box.row()
+            row.enabled = obj and obj.type == 'MESH'
+            split = row.split(factor=0.5)
+            col1 = split.column()
+            col2 = split.column()
+            col1.prop(props, "rainbow_weights")
+            col2.prop(props, "show_wire")
+            
             # Export button
             row = box.row(align=True)
             split = row.split(factor=0.5, align=True)
