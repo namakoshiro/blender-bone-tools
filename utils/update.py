@@ -12,6 +12,7 @@ from bpy.props import StringProperty, BoolProperty
 from bpy.types import Operator
 import urllib.request
 import urllib.error
+import threading
 
 def log(msg):
     # Print log message with prefix
@@ -45,12 +46,19 @@ class BONE_OT_update_from_online(Operator):
             'User-Agent': 'Mozilla/5.0'
         }
         req = urllib.request.Request(api_url, headers=headers)
-        with urllib.request.urlopen(req, timeout=1) as response:
-            data = json.loads(response.read().decode('utf-8'))
-            tag_name = data['tag_name']
-            version_match = re.match(r'v?(\d+)\.(\d+)\.(\d+)', tag_name)
-            if version_match:
-                return ((int(version_match.group(1)), int(version_match.group(2)), int(version_match.group(3))), tag_name)
+        try:
+            with urllib.request.urlopen(req, timeout=15) as response:
+                data = json.loads(response.read().decode('utf-8'))
+                tag_name = data['tag_name']
+                version_match = re.match(r'v?(\d+)\.(\d+)\.(\d+)', tag_name)
+                if version_match:
+                    return ((int(version_match.group(1)), int(version_match.group(2)), int(version_match.group(3))), tag_name)
+        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
+            log(f"Network connection error: {str(e)}")
+            return None, None
+        except Exception as e:
+            log(f"Error retrieving version information: {str(e)}")
+            return None, None
         return None, None
     
     def execute(self, context):
@@ -163,9 +171,15 @@ class BONE_OT_confirm_update(Operator):
                 temp_path = temp_file.name
             req = urllib.request.Request(download_url)
             req.add_header('Accept', 'application/octet-stream')
-            with urllib.request.urlopen(req, timeout=30) as response:
-                with open(temp_path, 'wb') as out_file:
-                    out_file.write(response.read())
+            req.add_header('User-Agent', 'Mozilla/5.0')
+            try:
+                with urllib.request.urlopen(req, timeout=60) as response:
+                    with open(temp_path, 'wb') as out_file:
+                        out_file.write(response.read())
+            except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
+                log(f"Network connection error: {str(e)}")
+                self.report({'ERROR'}, f"Network connection error while downloading update: {str(e)}")
+                return {'CANCELLED'}
         except Exception as e:
             log(f"Download error: {str(e)}")
             self.report({'ERROR'}, f"Download error: {str(e)}")
@@ -389,59 +403,6 @@ class BONE_OT_cancel_update(Operator):
         self.report({'INFO'}, "Update cancelled")
         return {'FINISHED'}
 
-def check_for_updates():
-    log("Background update check started")
-    
-    try:
-        addon_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-        init_file = os.path.join(addon_dir, "__init__.py")
-        current_version = None
-        with open(init_file, 'r') as f:
-            content = f.read()
-        version_match = re.search(r'"version":\s*\((\d+),\s*(\d+),\s*(\d+)\)', content)
-        if version_match:
-            current_version = (int(version_match.group(1)), int(version_match.group(2)), int(version_match.group(3)))
-        if not current_version:
-            return None
-        api_url = GITHUB_API_URL
-        headers = {
-            'Accept': 'application/vnd.github.v3+json',
-            'User-Agent': 'Mozilla/5.0'
-        }
-        req = urllib.request.Request(api_url, headers=headers)
-        with urllib.request.urlopen(req, timeout=5) as response:
-            data = json.loads(response.read().decode('utf-8'))
-            tag_name = data['tag_name']
-            version_match = re.match(r'v?(\d+)\.(\d+)\.(\d+)', tag_name)
-            if version_match:
-                latest_version = (int(version_match.group(1)), int(version_match.group(2)), int(version_match.group(3)))
-            else:
-                return None
-        
-        is_newer = False
-        if latest_version[0] > current_version[0]:
-            is_newer = True
-        elif latest_version[0] == current_version[0] and latest_version[1] > current_version[1]:
-            is_newer = True
-        elif latest_version[0] == current_version[0] and latest_version[1] == current_version[1] and latest_version[2] > current_version[2]:
-            is_newer = True
-        
-        if is_newer:
-            global _latest_tag_name
-            _latest_tag_name = tag_name
-            version_str = f"{latest_version[0]}.{latest_version[1]}.{latest_version[2]}"
-            log(f"New version {version_str} available")
-            bpy.types.Scene.bone_tools_update_available = True
-            bpy.types.Scene.bone_tools_new_version = version_str
-        else:
-            bpy.types.Scene.bone_tools_update_available = False
-            log("No updates available")
-        
-        return None
-    except Exception as e:
-        log(f"Error checking for updates: {str(e)}")
-        return None
-
 def should_check_for_updates():
     last_check = None
     
@@ -466,7 +427,86 @@ def background_update_check():
     if should_check_for_updates():
         today_str = datetime.datetime.now().strftime("%Y-%m-%d")
         bpy.context.scene.bone_tools_last_update_check = today_str
-        check_for_updates()
+        
+        # Run the update check in a separate thread to avoid blocking the UI
+        thread = threading.Thread(target=threaded_update_check)
+        thread.daemon = True
+        thread.start()
+    
+    return None
+
+def threaded_update_check():
+    try:
+        addon_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        init_file = os.path.join(addon_dir, "__init__.py")
+        current_version = None
+        with open(init_file, 'r') as f:
+            content = f.read()
+        version_match = re.search(r'"version":\s*\((\d+),\s*(\d+),\s*(\d+)\)', content)
+        if version_match:
+            current_version = (int(version_match.group(1)), int(version_match.group(2)), int(version_match.group(3)))
+        if not current_version:
+            return None
+        api_url = GITHUB_API_URL
+        headers = {
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'Mozilla/5.0'
+        }
+        req = urllib.request.Request(api_url, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=15) as response:
+                data = json.loads(response.read().decode('utf-8'))
+                tag_name = data['tag_name']
+                version_match = re.match(r'v?(\d+)\.(\d+)\.(\d+)', tag_name)
+                if version_match:
+                    latest_version = (int(version_match.group(1)), int(version_match.group(2)), int(version_match.group(3)))
+                else:
+                    return None
+                
+                is_newer = False
+                if latest_version[0] > current_version[0]:
+                    is_newer = True
+                elif latest_version[0] == current_version[0] and latest_version[1] > current_version[1]:
+                    is_newer = True
+                elif latest_version[0] == current_version[0] and latest_version[1] == current_version[1] and latest_version[2] > current_version[2]:
+                    is_newer = True
+                
+                # We need to use Blender's main thread for updating UI properties
+                def update_ui_properties():
+                    global _latest_tag_name
+                    if is_newer:
+                        _latest_tag_name = tag_name
+                        version_str = f"{latest_version[0]}.{latest_version[1]}.{latest_version[2]}"
+                        log(f"New version {version_str} available")
+                        bpy.types.Scene.bone_tools_update_available = True
+                        bpy.types.Scene.bone_tools_new_version = version_str
+                    else:
+                        bpy.types.Scene.bone_tools_update_available = False
+                        log("No updates available")
+                    
+                    for window in bpy.context.window_manager.windows:
+                        for area in window.screen.areas:
+                            area.tag_redraw()
+                    
+                    def delayed_redraw():
+                        for window in bpy.context.window_manager.windows:
+                            for area in window.screen.areas:
+                                area.tag_redraw()
+                        return None
+                    
+                    bpy.app.timers.register(delayed_redraw, first_interval=0.5)
+                    bpy.app.timers.register(delayed_redraw, first_interval=1.0)
+                    
+                    return None
+                
+                # Schedule the UI update on the main thread
+                bpy.app.timers.register(update_ui_properties, first_interval=0.1)
+        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
+            log(f"Network connection error: {str(e)}")
+        except Exception as e:
+            log(f"Error checking for updates: {str(e)}")
+    except Exception as e:
+        log(f"Error checking for updates: {str(e)}")
     
     return None
 
@@ -496,7 +536,7 @@ def register():
         default=""
     )
     
-    bpy.app.timers.register(background_update_check, first_interval=5.0)
+    bpy.app.timers.register(background_update_check, first_interval=1.0)
 
 # Unregister
 def unregister():

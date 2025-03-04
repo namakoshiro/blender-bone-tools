@@ -138,7 +138,7 @@ class VIEW3D_PT_bone_tools(Panel):
         # Update button
         col = split.column(align=True)
         col.scale_y = 1
-        col.operator("bone.update_from_online", text="Update", icon='URL')
+        update_op = col.operator("bone.update_from_online", text="Update", icon='URL')
         
         # Install button
         col = split.column(align=True)
@@ -149,11 +149,16 @@ class VIEW3D_PT_bone_tools(Panel):
         col = box.column()
         col.label(text="Version: 1.2.0")
         col.label(text="Last Updated: 2025/2/28")
-        
-        # Show update notification if available
-        if hasattr(bpy.types.Scene, "bone_tools_update_available") and bpy.types.Scene.bone_tools_update_available:
-            row = col.row()
-            row.label(text="New Version Available!")
+        if hasattr(bpy.types.Scene, "bone_tools_update_available"):
+            if hasattr(bpy.context.scene, "bone_tools_update_check_in_progress") and bpy.context.scene.bone_tools_update_check_in_progress:
+                col.label(text="Checking update...")
+            elif bpy.types.Scene.bone_tools_update_available:
+                new_version = bpy.types.Scene.bone_tools_new_version if hasattr(bpy.types.Scene, "bone_tools_new_version") else ""
+                col.label(text=f"New version {new_version} available", icon='FILE_REFRESH')
+            else:
+                col.label(text="Already latest version", icon='CHECKMARK')
+        else:
+            col.label(text="")
 
 # Register
 def register():
