@@ -9,20 +9,20 @@ from .. import get_preset_items, load_presets, get_preset_path
 # Show warning dialog before opening presets file
 class ARMATURE_OT_show_presets_warning(Operator):
     bl_idname = "armature.show_presets_warning"
-    bl_label = "Warning"
+    bl_label = "WARNING"
     bl_description = "Show warning before opening presets file"
     bl_options = {'REGISTER', 'INTERNAL'}
     
     def invoke(self, context, event):
         # Show dialog
         wm = context.window_manager
-        return wm.invoke_props_dialog(self, width=300)
+        return wm.invoke_props_dialog(self, width=270)
     
     def draw(self, context):
         # Draw dialog content
         layout = self.layout
-        layout.label(text="The presets will be overwritten when updating")
-        layout.label(text="Please remember to make a backup!")
+        layout.label(text="This presets file will be overwritten when updating")
+        layout.label(text="Please remember to make a backup", icon='ERROR')
     
     def execute(self, context):
         # Open the presets file after user confirms
