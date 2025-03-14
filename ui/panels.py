@@ -102,15 +102,6 @@ class VIEW3D_PT_bone_tools(Panel):
                 row.alert = True
                 row.label(text="Press Button in Object/Weight Mode", icon='ERROR')
             
-            # Rainbow Weights toggle
-            row = box.row()
-            row.enabled = obj and obj.type == 'MESH'
-            split = row.split(factor=0.5)
-            col1 = split.column()
-            col2 = split.column()
-            col1.prop(props, "rainbow_weights")
-            col2.prop(props, "show_wire")
-            
             # Export button
             row = box.row(align=True)
             split = row.split(factor=0.5, align=True)
@@ -124,6 +115,20 @@ class VIEW3D_PT_bone_tools(Panel):
             col.scale_y = 1
             col.enabled = obj and obj.type == 'MESH' and context.mode in {'OBJECT', 'PAINT_WEIGHT'}
             col.operator("weight.import_weights", text="Import", icon='IMPORT')
+            
+            # Copy button
+            row = box.row(align=True)
+            split = row.split(factor=0.5, align=True)
+            col = split.column(align=True)
+            col.scale_y = 1
+            col.enabled = obj and obj.type == 'MESH' and context.mode in {'OBJECT', 'PAINT_WEIGHT'}
+            col.operator("weight.copy_weights", text="Copy", icon='COPYDOWN')
+            
+            # Paste button
+            col = split.column(align=True)
+            col.scale_y = 1
+            col.enabled = obj and obj.type == 'MESH' and context.mode in {'OBJECT', 'PAINT_WEIGHT'}
+            col.operator("weight.paste_weights", text="Paste", icon='PASTEDOWN')
             
             # Import to selected vertices only
             row = box.row()
@@ -147,8 +152,8 @@ class VIEW3D_PT_bone_tools(Panel):
 
         # Version Info
         col = box.column()
-        col.label(text="Version: 1.2.0")
-        col.label(text="Last Updated: 2025/2/28")
+        col.label(text="Version: 1.3.0")
+        col.label(text="Last Updated: 2025/3/14")
         if hasattr(bpy.types.Scene, "bone_tools_update_available"):
             if hasattr(bpy.context.scene, "bone_tools_update_check_in_progress") and bpy.context.scene.bone_tools_update_check_in_progress:
                 col.label(text="Checking update...")

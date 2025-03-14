@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Bone Tools",
     "author": "namakoshiro",
-    "version": (1, 2, 0),
+    "version": (1, 3, 0),
     "blender": (2, 80, 0),
     "location": "View3D > Sidebar > Bone",
     "description": "This is a Blender addon to manage bones and weights",
@@ -53,7 +53,6 @@ from .modules import weight_transfer
 # Import from utils directory
 from .utils import install
 from .utils import update
-from .utils import rainbow
 
 class BoneToolsProperties(PropertyGroup):
     # Show or hide the sections
@@ -98,32 +97,6 @@ class BoneToolsProperties(PropertyGroup):
         description="Import weights to selected vertices only",
         default=False
     )
-    rainbow_weights: BoolProperty(
-        name="Rainbow",
-        description="Display vertex weights with rainbow colors for better visualization",
-        default=False,
-        update=lambda self, context: self.update_rainbow_weights(context)
-    )
-    show_wire: BoolProperty(
-        name="Wire",
-        description="Display mesh wireframe",
-        default=False,
-        update=lambda self, context: self.update_show_wire(context)
-    )
-    
-    def update_rainbow_weights(self, context):
-        from .utils.rainbow import update_rainbow_weights_display
-        update_rainbow_weights_display(self, context)
-        return None
-        
-    def update_show_wire(self, context):
-        # Only update when there is an active object and the object is a mesh
-        if not context or not context.active_object or context.active_object.type != 'MESH':
-            return None
-        obj = context.active_object
-        obj.show_wire = self.show_wire
-        obj.show_all_edges = self.show_wire
-        return None
 
 # Register
 def register():
@@ -136,11 +109,9 @@ def register():
     panels.register()
     install.register()
     update.register()
-    rainbow.register()
 
 # Unregister
 def unregister():
-    rainbow.unregister()
     update.unregister()
     install.unregister()
     panels.unregister()
