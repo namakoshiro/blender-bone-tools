@@ -102,38 +102,43 @@ class VIEW3D_PT_bone_tools(Panel):
                 row.alert = True
                 row.label(text="Press Button in Object/Weight Mode", icon='ERROR')
             
+            # Create a 2x2 grid of buttons
+            grid = box.grid_flow(row_major=False, columns=2, even_columns=True, even_rows=True, align=True)
+            
             # Export button
-            row = box.row(align=True)
-            split = row.split(factor=0.5, align=True)
-            col = split.column(align=True)
-            col.scale_y = 1
-            col.enabled = obj and obj.type == 'MESH' and context.mode in {'OBJECT', 'PAINT_WEIGHT'}
-            col.operator("weight.export_weights", text="Export", icon='EXPORT')
+            cell = grid.column(align=True)
+            cell.scale_y = 1
+            cell.enabled = obj and obj.type == 'MESH' and context.mode in {'OBJECT', 'PAINT_WEIGHT'}
+            cell.operator("weight.export_weights", text="Export", icon='EXPORT')
             
             # Import button
-            col = split.column(align=True)
-            col.scale_y = 1
-            col.enabled = obj and obj.type == 'MESH' and context.mode in {'OBJECT', 'PAINT_WEIGHT'}
-            col.operator("weight.import_weights", text="Import", icon='IMPORT')
+            cell = grid.column(align=True)
+            cell.scale_y = 1
+            cell.enabled = obj and obj.type == 'MESH' and context.mode in {'OBJECT', 'PAINT_WEIGHT'}
+            cell.operator("weight.import_weights", text="Import", icon='IMPORT')
             
             # Copy button
-            row = box.row(align=True)
-            split = row.split(factor=0.5, align=True)
-            col = split.column(align=True)
-            col.scale_y = 1
-            col.enabled = obj and obj.type == 'MESH' and context.mode in {'OBJECT', 'PAINT_WEIGHT'}
-            col.operator("weight.copy_weights", text="Copy", icon='COPYDOWN')
+            cell = grid.column(align=True)
+            cell.scale_y = 1
+            cell.enabled = obj and obj.type == 'MESH' and context.mode in {'OBJECT', 'PAINT_WEIGHT'}
+            cell.operator("weight.copy_weights", text="Copy", icon='COPYDOWN')
             
             # Paste button
-            col = split.column(align=True)
-            col.scale_y = 1
-            col.enabled = obj and obj.type == 'MESH' and context.mode in {'OBJECT', 'PAINT_WEIGHT'}
-            col.operator("weight.paste_weights", text="Paste", icon='PASTEDOWN')
+            cell = grid.column(align=True)
+            cell.scale_y = 1
+            cell.enabled = obj and obj.type == 'MESH' and context.mode in {'OBJECT', 'PAINT_WEIGHT'}
+            cell.operator("weight.paste_weights", text="Paste", icon='PASTEDOWN')
             
-            # Import to selected vertices only
+            # Only to Selected Vertices checkbox
             row = box.row()
             row.enabled = obj and obj.type == 'MESH' and context.mode in {'OBJECT', 'PAINT_WEIGHT'}
             row.prop(props, "selected_only")
+            
+            # Clean up Empty Vertex Groups button
+            row = box.row()
+            row.scale_y = 1
+            row.enabled = obj and obj.type == 'MESH' and context.mode in {'OBJECT', 'PAINT_WEIGHT'}
+            row.operator("weight.clean_empty_groups", text="Clean up Empty Vertex Groups", icon='TRASH')
         
         layout.separator()
         box = layout.box()
@@ -152,8 +157,8 @@ class VIEW3D_PT_bone_tools(Panel):
 
         # Version Info
         col = box.column()
-        col.label(text="Version: 1.3.0")
-        col.label(text="Last Updated: 2025/3/14")
+        col.label(text="Version: 1.3.1")
+        col.label(text="Last Updated: 2025/3/16")
         if hasattr(bpy.types.Scene, "bone_tools_update_available"):
             if hasattr(bpy.context.scene, "bone_tools_update_check_in_progress") and bpy.context.scene.bone_tools_update_check_in_progress:
                 col.label(text="Checking update...")

@@ -1,4 +1,4 @@
-## [**`👉 Download Latest Version 👈`**](https://github.com/namakoshiro/blender-bone-tools/releases/download/v1.3.0/blender-bone-tools-v1.3.0.zip)
+## [**`👉 Download Latest Version 👈`**](https://github.com/namakoshiro/blender-bone-tools/releases/download/v1.3.1/blender-bone-tools-v1.3.1.zip)
 
 - **For first time installation**
     - Drag the `Zip` file into Blender and click `OK`
@@ -12,7 +12,7 @@
 
 - **For update from version 1.2.0**  
     - Press `Update` button to update the addon online
-    - In case it's not working, please manually [`Download Latest Version`](https://github.com/namakoshiro/blender-bone-tools/releases/download/v1.3.0/blender-bone-tools-v1.3.0.zip)
+    - In case it's not working, please manually [`Download Latest Version`](https://github.com/namakoshiro/blender-bone-tools/releases/download/v1.3.1/blender-bone-tools-v1.3.1.zip)
     - Press `Install` button and select `Zip` file to update the addon
 
 ## **😊 Information**
@@ -20,8 +20,8 @@
 **This is a Blender addon to manage bones and weights**  
 
 - Author: [`namakoshiro`](https://x.com/namakoshiro)  
-- Version: `1.3.0`  
-- Last Updated: `2025/3/14`  
+- Version: `1.3.1`  
+- Last Updated: `2025/3/16`  
 
 ## **📖 How to Use**
 
@@ -53,10 +53,14 @@ then import or paste them to other objects, even in different projects
 - Transfer weights to selected vertices of the object  
     - Select some vertices in `Edit Mode`
     - Back to `Object Mode` or `Weight Paint Mode`
-    - Make sure `Import to Selected Vertices` is checked
-    - Import or paste weights to selected vertices only
+    - Make sure `Only to Selected Vertices` is checked
+    - Import or paste weights will only affect to selected vertices
 
 ## **Update History**
+
+- **1.3.1 (2025/3/16)**
+    - New feature: Clean up empty vertex groups
+    - Clean up empty vertex groups will be automatically executed when importing or pasting weights
 
 - **1.3.0 (2025/3/14)**
     - Enhance features

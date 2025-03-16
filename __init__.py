@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Bone Tools",
     "author": "namakoshiro",
-    "version": (1, 3, 0),
+    "version": (1, 3, 1),
     "blender": (2, 80, 0),
     "location": "View3D > Sidebar > Bone",
     "description": "This is a Blender addon to manage bones and weights",
@@ -93,8 +93,8 @@ class BoneToolsProperties(PropertyGroup):
     
     # Weight Transfer section
     selected_only: BoolProperty(
-        name="Import to Selected Vertices",
-        description="Import weights to selected vertices only",
+        name="Only to Selected Vertices",
+        description="Import or paste weights only to selected vertices. Need to select vertices in Edit Mode first",
         default=False
     )
 

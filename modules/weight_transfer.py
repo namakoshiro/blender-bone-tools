@@ -228,6 +228,9 @@ class WEIGHT_OT_import_weights(Operator, ImportHelper):
             if obj.vertex_groups and len(obj.vertex_groups) > 0:
                 obj.vertex_groups.active_index = 0
             
+            # Automatically clean up empty vertex groups
+            bpy.ops.weight.clean_empty_groups()
+            
             self.report({'INFO'}, f"Successfully imported weights from {self.filepath}")
             return {'FINISHED'}
             
@@ -309,6 +312,7 @@ class WEIGHT_OT_paste_weights(Operator):
     
     @classmethod
     def poll(cls, context):
+        # Check if object is mesh and is in Object Mode or Weight Paint Mode
         obj = context.active_object
         if not obj or obj.type != 'MESH':
             return False
@@ -440,6 +444,9 @@ class WEIGHT_OT_paste_weights(Operator):
             if obj.vertex_groups and len(obj.vertex_groups) > 0:
                 obj.vertex_groups.active_index = 0
             
+            # Automatically clean up empty vertex groups
+            bpy.ops.weight.clean_empty_groups()
+            
             self.report({'INFO'}, f"Successfully pasted weights ({len(vertex_data)} vertices)")
             return {'FINISHED'}
             
@@ -447,19 +454,74 @@ class WEIGHT_OT_paste_weights(Operator):
             self.report({'ERROR'}, f"Failed to paste weights: {str(e)}")
             return {'CANCELLED'}
 
+class WEIGHT_OT_clean_empty_groups(Operator):
+    bl_idname = "weight.clean_empty_groups"
+    bl_label = "Clean Empty Vertex Groups"
+    bl_description = "Delete all empty vertex groups (with no weights) from the active object"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    @classmethod
+    def poll(cls, context):
+        # Check if object is mesh and is in Object Mode or Weight Paint Mode
+        obj = context.active_object
+        if not obj or obj.type != 'MESH':
+            return False
+        return context.mode in {'OBJECT', 'PAINT_WEIGHT'}
+    
+    def execute(self, context):
+        obj = context.active_object
+        empty_groups = []
+        
+        # Find all empty vertex groups
+        for group in obj.vertex_groups:
+            is_empty = True
+            for vert in obj.data.vertices:
+                try:
+                    weight = group.weight(vert.index)
+                    if weight > 0:
+                        is_empty = False
+                        break
+                except RuntimeError:
+                    # Vertex not in group
+                    continue
+            
+            if is_empty:
+                empty_groups.append(group)
+        
+        # Store the number of empty groups found
+        num_deleted = len(empty_groups)
+        
+        # Remove empty groups
+        for group in empty_groups:
+            obj.vertex_groups.remove(group)
+        
+        # Select the first vertex group if any remain
+        if obj.vertex_groups and len(obj.vertex_groups) > 0:
+            obj.vertex_groups.active_index = 0
+        
+        # Report the result
+        if num_deleted == 0:
+            self.report({'INFO'}, "No empty vertex groups found")
+        else:
+            self.report({'INFO'}, f"Deleted {num_deleted} empty vertex groups")
+        
+        return {'FINISHED'}
+
 # Register
 def register():
     bpy.utils.register_class(WEIGHT_OT_export_weights)
     bpy.utils.register_class(WEIGHT_OT_import_weights)
     bpy.utils.register_class(WEIGHT_OT_copy_weights)
     bpy.utils.register_class(WEIGHT_OT_paste_weights)
+    bpy.utils.register_class(WEIGHT_OT_clean_empty_groups)
 
 # Unregister
 def unregister():
-    bpy.utils.unregister_class(WEIGHT_OT_paste_weights)
-    bpy.utils.unregister_class(WEIGHT_OT_copy_weights)
-    bpy.utils.unregister_class(WEIGHT_OT_import_weights)
     bpy.utils.unregister_class(WEIGHT_OT_export_weights)
+    bpy.utils.unregister_class(WEIGHT_OT_import_weights)
+    bpy.utils.unregister_class(WEIGHT_OT_copy_weights)
+    bpy.utils.unregister_class(WEIGHT_OT_paste_weights)
+    bpy.utils.unregister_class(WEIGHT_OT_clean_empty_groups)
 
 if __name__ == "__main__":
     register()
